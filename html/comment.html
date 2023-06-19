@@ -1,0 +1,182 @@
+<head>
+    <style>
+        input,
+        textarea {
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+        }
+
+        #comment {
+            width: 100%;
+            background-color: rgb(238, 238, 238);
+            border: 0px;
+            outline: none;
+            border-radius: 0.5rem;
+            padding-top: 0.3rem;
+            padding-bottom: 0.3rem;
+            overflow: hidden;
+            resize: none;
+        }
+
+        #name,
+        #email {
+            height: 2rem;
+            background-color: rgb(238, 238, 238);
+            border: 0px;
+            outline: none;
+            border-radius: 0.5rem;
+        }
+
+        label,
+        input {
+            line-height: 3rem;
+        }
+
+        #submit {
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: rgb(238, 238, 238);
+            border: 0px;
+            outline: none;
+            padding: 0.7rem 2rem;
+            border-radius: 0.5rem;
+            margin-left: 80%;
+            margin-top: 0.5rem;
+        }
+
+        #submit>img {
+            height: 1px;
+        }
+
+        #my-form-status {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background-color: black;
+            color: white;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #my-form-status.show {
+            opacity: 1;
+        }
+    </style>
+
+</head>
+
+<body>
+    <p></p>
+
+    <!-- Formspree邮件发送 -->
+
+    <form id="my-form" action="https://formspree.io/f/mlekqonp" method="POST">
+        <label for="name">昵称（必填）</label>
+        <br />
+        <input type="text" id="name" name="name" autocomplete="off" required>
+        <br /> <br />
+
+        <label for="email" type="email">邮箱（选填）</label>
+        <br />
+        <input type="text" id="email" name="email" autocomplete="off">
+        <br /> <br />
+
+        <label for="comment">评论</label>
+        <br />
+        <textarea id="comment" name="comment" rows="5" autocomplete="off" oninput="autoGrow(this)" required></textarea>
+        <br /><br />
+        <button type="submit" id="submit">发送<img src="\img\submit.svg" alt="submit"></button>
+        <p id="my-form-status"></p>
+        <input type="hidden" id="ua" name="ua">
+        <input type="hidden" id="ip" name="ip"><br>
+    </form>
+
+    <!-- 评论区自动增加高度 -->
+    <script>
+        function autoGrow(textarea) {
+            textarea.style.height = "auto";
+            textarea.style.height = (textarea.scrollHeight) + "px";
+        }
+    </script>
+
+    <!-- 发送JS -->
+    <script>
+        var form = document.getElementById("my-form");
+
+        async function handleSubmit(event) {
+
+            event.preventDefault();
+            var status = document.getElementById("my-form-status");
+            var data = new FormData(event.target);
+            fetch(event.target.action, {
+                method: form.method,
+                body: data,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            }).then(response => {
+                // alert(response)
+                if (response.ok) {
+                    status.innerHTML = "✅感谢您的评论！";
+                    status.classList.add('show');
+                    setTimeout(() => {
+                        status.classList.remove('show');
+                    }, 3000);
+                    form.reset()
+                } else {
+                    response.json().then(data => {
+                        if (Object.hasOwn(data, 'errors')) {
+                            if (data["errors"].map(error => error["message"]).join(", ") == "should be an email") {
+                                status.style.display = 'block';
+                                status.innerHTML = "❎不是有效邮箱地址";
+                                status.classList.add('show');
+                                setTimeout(() => {
+                                    status.classList.remove('show');
+                                }, 3000);
+                            } else {
+                                status.style.display = 'block';
+                                status.innerHTML = data["errors"].map(error => error["message"]).join(", ")
+                                status.classList.add('show');
+                                setTimeout(() => {
+                                    status.classList.remove('show');
+                                }, 3000);
+                            };
+                        } else {
+                            status.style.display = 'block';
+                            status.innerHTML = "❎出现错误，请稍后再试";
+                            status.classList.add('show');
+                            setTimeout(() => {
+                                status.classList.remove('show');
+                            }, 3000);
+                        }
+                    })
+                }
+            }).catch(error => {
+                status.innerHTML = "❎出现错误，请稍后再试"
+                status.classList.add('show');
+                setTimeout(() => {
+                    status.classList.remove('show');
+                }, 3000);
+            });
+        }
+        form.addEventListener("submit", handleSubmit)
+    </script>
+    <script>
+        async function getIpAddress() {
+            let response = await fetch('https://api.ipify.org?format=json');
+            let data = await response.json();
+            return data.ip;
+        }
+
+        window.addEventListener('load', async () => {
+            let ua = navigator.userAgent;
+            document.getElementById('ua').value = ua;
+
+            let ip = await getIpAddress();
+            document.getElementById('ip').value = ip;
+        });
+    </script>
+</body>
